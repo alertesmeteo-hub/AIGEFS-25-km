@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 import io
 import re
 import time
+import threading
 import requests
 import numpy as np
 import eccodes as e
@@ -15,6 +16,16 @@ STEPS=list(range(0,385,6))
 MAP_STEPS=[0,6,12,18]+list(range(24,385,24))
 LON=np.arange(-26,46.01,.25);LAT=np.arange(29,73.01,.25)
 IX=np.rint((LON%360)/.25).astype(int);IY=np.rint((90-LAT)/.25).astype(int)
+_request_lock=threading.Lock()
+_last_request=0.0
+
+def pace():
+    """Global cap below 60 requests/minute, shared by all worker threads."""
+    global _last_request
+    with _request_lock:
+        remaining=1.5-(time.monotonic()-_last_request)
+        if remaining>0:time.sleep(remaining)
+        _last_request=time.monotonic()
 
 class Links(HTMLParser):
     def __init__(self):super().__init__();self.links=[]
@@ -22,6 +33,7 @@ class Links(HTMLParser):
         if tag=='a':self.links.extend(v for k,v in attrs if k=='href')
 
 def listing(session,url):
+    pace()
     response=session.get(url,timeout=(15,60));response.raise_for_status()
     parser=Links();parser.feed(response.text);return parser.links
 
@@ -37,8 +49,11 @@ def latest_run():
         for cycle in cycles:
             run=datetime.strptime(day[7:15]+cycle[:2],'%Y%m%d%H').replace(tzinfo=timezone.utc)
             # Last lead for every member must already exist; do not mix cycles.
+            def probe(member):
+                pace()
+                with requests.head(url_for(run,member,384),timeout=(15,45)) as response:return response.status_code
             with ThreadPoolExecutor(max_workers=3) as pool:
-                statuses=list(pool.map(lambda member:requests.head(url_for(run,member,384),timeout=(15,45)).status_code,range(MEMBERS)))
+                statuses=list(pool.map(probe,range(MEMBERS)))
             if all(status==200 for status in statuses):return run
             checked+=1
             if checked>=4:break
@@ -47,6 +62,7 @@ def latest_run():
 def download(session,url):
     for attempt in range(3):
         try:
+            pace()
             with session.get(url,stream=True,timeout=(20,90)) as response:
                 response.raise_for_status();chunks=[];size=0
                 for chunk in response.iter_content(1024*1024):
@@ -54,11 +70,13 @@ def download(session,url):
                     if size>20_000_000:raise ValueError('Fichier surface anormalement volumineux')
                     chunks.append(chunk)
             data=b''.join(chunks)
-            if not data.startswith(b'GRIB') or not data.endswith(b'7777'):raise ValueError('GRIB tronqué')
+            if not data.startswith(b'GRIB') or not data.endswith(b'7777'):
+                raise requests.RequestException(f'Réponse non GRIB ou tronquée : {url}, {len(data)} octets')
             return data
-        except requests.RequestException:
+        except requests.RequestException as error:
             if attempt==2:raise
-            time.sleep(5*(attempt+1))
+            print(f'Téléchargement à reprendre ({error}); attente {60*(attempt+1)} s.',flush=True)
+            time.sleep(60*(attempt+1))
 
 def validate_message(get,run,member,step,name):
     expected={'Ni':1440,'Nj':721,'latitudeOfFirstGridPointInDegrees':90,

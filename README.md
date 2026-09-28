@@ -28,7 +28,9 @@ Validation de chaque GRIB : run, membre, 31 membres annoncés, grille, balayage,
 unités, niveau, période et absence de valeurs manquantes. Toute erreur bloque
 la publication et conserve la précédente. Pas de mélange de runs.
 Les 31 fichiers H+384 sont vérifiés avant de sélectionner un cycle.
-Trois téléchargements concurrents au maximum ; pas de téléchargement des niveaux
+Trois téléchargements concurrents au maximum, avec cadence globale limitée à
+40 requêtes/minute (y compris les contrôles de disponibilité). Réponses non GRIB
+rejetées et reprises après 60 puis 120 secondes ; pas de téléchargement des niveaux
 isobares inutilisés. Les fichiers complets restent temporaires en mémoire.
 
 Tests : `python -m unittest discover -s tests` et `node tests/test_module.cjs`.
