@@ -23,18 +23,21 @@ document.querySelectorAll('[data-aigefs]').forEach(async (root,index) => {
   const cities=await load('communes.json'), list=$('datalist');list.id='aigefs-cities-'+index;$('[data-city]').setAttribute('list',list.id);
   const search=()=>{list.replaceChildren();const query=$('[data-city]').value.toLocaleLowerCase('fr');if(query.length<2)return;cities.filter(c=>(c[1]+' '+c[0]).toLocaleLowerCase('fr').includes(query)).slice(0,40).forEach(c=>add(list,c[1]+' ('+c[0]+')',c[1]+' ('+c[0]+')'));};
   $('[data-city]').addEventListener('input',search);
-  let requestId=0,locationId=0;
+  let requestId=0,locationId=0,selectedCity=null;
   const displayCity=async c=>{const id=++requestId;try{
+   selectedCity=c;
    $('[data-head]').replaceChildren();$('[data-body]').replaceChildren();
    $('[data-city-status]').textContent='Chargement…';const dep=await load('departements/'+c[2]+'.json');const commune=dep.communes.find(row=>row[0]===c[0]);if(!commune)throw Error('Commune absente de la publication.');
    if(id!==requestId)return;
    $('[data-head]').replaceChildren();$('[data-body]').replaceChildren();const hr=document.createElement('tr'),shortLabels={precipitation:'Cumul (mm)',rain6:'Pluie 6 h',temperature:'T° à 2 m',vent:'Vent 10 m',nuages:'Nuages',humidity:'Humidité',pressure:'Pression'};const dateHead=document.createElement('th');dateHead.textContent='Validité';hr.append(dateHead);Object.entries(manifest.products).forEach(([key,p])=>{const th=document.createElement('th');th.textContent=shortLabels[key]||p.label;th.title=p.label+' ('+p.unit+')';hr.append(th);});$('[data-head]').append(hr);
-   dep.forecast.forEach(([date,rows])=>{const tr=document.createElement('tr'),td=document.createElement('td'),valid=new Date(date),day=document.createElement('strong'),hour=document.createElement('span');td.className='aigefs-forecast-date';day.textContent=valid.toLocaleDateString('fr-FR',{timeZone:'Europe/Paris',day:'2-digit',month:'2-digit',year:'numeric'});hour.textContent=valid.toLocaleTimeString('fr-FR',{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit'});td.append(day);td.append(hour);tr.append(td);Object.entries(manifest.products).forEach(([key,p])=>{const cell=document.createElement('td');cell.textContent=number(rows[commune[6]][p.column],p.unit,key);tr.append(cell);});$('[data-body]').append(tr);});
-   $('[data-city-status]').textContent=c[1]+' · maille la plus proche · moyenne des 31 membres';
+   const stat=$('[data-table-stat]').value,forecast=stat==='mean'?dep.forecast:dep.forecast_statistics?.[stat];if(!forecast)throw Error('Cette statistique communale sera disponible après la prochaine production.');let previousDay='',dayIndex=-1;
+   forecast.forEach(([date,rows])=>{const tr=document.createElement('tr'),td=document.createElement('td'),valid=new Date(date),dayKey=valid.toLocaleDateString('fr-CA',{timeZone:'Europe/Paris'}),day=document.createElement('strong'),hour=document.createElement('span');if(dayKey!==previousDay){dayIndex++;previousDay=dayKey;}tr.className='aigefs-day-'+dayIndex%4;td.className='aigefs-forecast-date';day.textContent=valid.toLocaleDateString('fr-FR',{timeZone:'Europe/Paris',day:'2-digit',month:'2-digit',year:'numeric'});hour.textContent=valid.toLocaleTimeString('fr-FR',{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit'});td.append(day);td.append(hour);tr.append(td);Object.entries(manifest.products).forEach(([key,p])=>{const cell=document.createElement('td');cell.textContent=number(rows[commune[6]][p.column],p.unit,key);tr.append(cell);});$('[data-body]').append(tr);});
+   $('[data-city-status]').textContent=c[1]+' · maille la plus proche · '+$('[data-table-stat]').selectedOptions[0].textContent.toLocaleLowerCase('fr');
   }catch(error){if(id===requestId)$('[data-city-status]').textContent=error.message;}};
   const show=()=>{locationId++;const query=$('[data-city]').value.trim(),matches=cities.filter(c=>query===c[0]||query===c[1]+' ('+c[0]+')'||query.toLocaleLowerCase('fr')===c[1].toLocaleLowerCase('fr'));
    if(matches.length!==1){requestId++;$('[data-head]').replaceChildren();$('[data-body]').replaceChildren();$('[data-city-status]').textContent=matches.length?'Plusieurs communes portent ce nom : choisissez dans la liste.':'Saisissez une commune puis choisissez une proposition dans la liste.';return;}displayCity(matches[0]);};
   $('[data-show]').disabled=false;$('[data-show]').addEventListener('click',show);
+  $('[data-table-stat]').addEventListener('change',()=>{if(selectedCity)displayCity(selectedCity);});
   $('[data-city]').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();show();}});
   const locate=$('[data-locate]');let placesPromise;
   locate.disabled=false;

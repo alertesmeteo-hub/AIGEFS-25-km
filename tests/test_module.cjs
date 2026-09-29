@@ -9,8 +9,8 @@ class Element {
 }
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
 async function setup(){
- const els={};for(const key of ['status','region','product','stat','step','zoom','map','period','city','show','locate','city-status','head','body'])els['[data-'+key+']']=new Element();els.datalist=new Element();
- els['[data-region]'].value='france';els['[data-stat]'].value='mean';
+ const els={};for(const key of ['status','region','product','stat','table-stat','step','zoom','map','period','city','show','locate','city-status','head','body'])els['[data-'+key+']']=new Element();els.datalist=new Element();
+ els['[data-region]'].value='france';els['[data-stat]'].value='mean';els['[data-table-stat]'].value='mean';
  const root={dataset:{source:'https://example.test/data',places:'/local-places.json'},querySelector:s=>els[s]};let success,failure,calls=0;const urls=[];
  const manifest={members:31,status:'ok',run:'2026-09-27T18:00:00Z',commune_count:2,steps:[0,24],products:{precipitation:{label:'Pluie',unit:'mm',column:12,period:'run'}}};
  const cities=[['75056','Paris','75'],['66136','Perpignan','66']];
