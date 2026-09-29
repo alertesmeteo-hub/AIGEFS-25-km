@@ -2,14 +2,14 @@
 /**
  * Plugin Name: Alertes Météo — AIGEFS 25 km
  * Description: Cartes et tableaux de la prévision d'ensemble AIGEFS, grille 0,25°.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Alertes Météo
  * License: GPL-2.0-or-later
  */
 if (!defined('ABSPATH')) { exit; }
 add_shortcode('aigefs_meteo', function () {
-    wp_enqueue_style('aigefs-meteo', plugins_url('assets/module.css', __FILE__), array(), '1.0.0');
-    wp_enqueue_script('aigefs-meteo', plugins_url('assets/module.js', __FILE__), array(), '1.0.0', true);
+    wp_enqueue_style('aigefs-meteo', plugins_url('assets/module.css', __FILE__), array(), '1.0.1');
+    wp_enqueue_script('aigefs-meteo', plugins_url('assets/module.js', __FILE__), array(), '1.0.1', true);
     $source = apply_filters('aigefs_meteo_data_url', 'https://raw.githubusercontent.com/alertesmeteo-hub/AIGEFS-25-km/data');
     ob_start(); ?>
     <section class="aigefs" data-aigefs data-source="<?php echo esc_url($source); ?>" data-places="<?php echo esc_url(plugins_url('assets/communes-geo.json', __FILE__)); ?>">
@@ -26,6 +26,7 @@ add_shortcode('aigefs_meteo', function () {
         </div>
         <p class="aigefs-note">Localisation uniquement à votre demande, avec votre autorisation. Vos coordonnées sont traitées dans votre navigateur, sans être envoyées au module météo.</p>
         <p data-city-status role="status" aria-live="polite"></p>
+        <p class="aigefs-table-stat" data-table-stat><strong>Statistique du tableau :</strong> moyenne des 31 membres</p>
         <div class="aigefs-table"><table><thead data-head></thead><tbody data-body></tbody></table></div>
       </section>
       <div class="aigefs-controls">
@@ -38,7 +39,7 @@ add_shortcode('aigefs_meteo', function () {
       <p data-period></p>
       <div class="aigefs-map"><img data-map alt="Carte AIGEFS" hidden></div>
       <p class="aigefs-note">Vent à 10 m : ce ne sont pas des rafales. Précipitations sur 6 h et cumul depuis le run, en mm d'équivalent eau. Tableau toutes les 6 h jusqu'à H+384 (16 jours), sans interpolation horaire. Cartes à H+0, 6, 12, 18, puis toutes les 24 h. Le cumul total est calculé membre par membre avant les statistiques. La grille est de 0,25° ; « 25 km » est le nom du module, pas une distance constante.</p>
-      <footer><span class="aigefs-logo">www.alertes-meteo.com</span><p>Source : NOAA/NCEP · AIGEFS opérationnel. Module AIGEFS v1.0.0.</p></footer>
+      <footer><span class="aigefs-logo">www.alertes-meteo.com</span><p>Source : NOAA/NCEP · AIGEFS opérationnel. Module AIGEFS v1.0.1.</p></footer>
     </section>
     <?php return ob_get_clean();
 });

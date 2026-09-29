@@ -1,5 +1,5 @@
 === AIGEFS 25 km — Alertes Météo ===
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 Requires PHP: 7.4
 License: GPLv2 or later
 
@@ -13,3 +13,6 @@ France/Europe : moyenne, médiane, P10 et P90 ; aucune interpolation horaire.
 34 746 communes métropole et Corse. Vent affiché par paliers de 5 km/h.
 Les statistiques sont calculées après la norme du vent et le cumul par membre.
 Shortcode indépendant de PEARP. Aucun secret nécessaire dans WordPress.
+
+1.0.1 : tableau complet et mobile, dates renforcées, statistique visible,
+pression sans décimale et température arrondie sous forme de plage.

@@ -3,7 +3,8 @@ document.querySelectorAll('[data-aigefs]').forEach(async (root,index) => {
  const $=s=>root.querySelector(s), base=root.dataset.source.replace(/\/$/,''),status=$('[data-status]');
  const load=async path=>{const response=await fetch(base+'/'+path,{cache:'no-cache'});if(!response.ok)throw Error('Données indisponibles (HTTP '+response.status+').');return response.json();};
  const add=(select,value,label)=>{const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);};
- const number=(v,unit)=>Number.isFinite(v)?new Intl.NumberFormat('fr-FR',{maximumFractionDigits:unit==='km/h'?0:1}).format(unit==='km/h'?Math.ceil(v/5)*5:v)+' '+unit:'—';
+ const integer=v=>new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(Math.round(v));
+ const number=(v,unit,key)=>{if(!Number.isFinite(v))return '—';if(key==='temperature'){const low=Math.floor(v),high=Math.ceil(v);return (low===high?integer(low):integer(low)+' à '+integer(high))+' °C';}if(unit==='km/h')return integer(Math.ceil(v/5)*5)+' km/h';if(unit==='%'||unit==='hPa')return integer(v)+' '+unit;return new Intl.NumberFormat('fr-FR',{maximumFractionDigits:1}).format(v)+' '+unit;};
  try {
   const manifest=await load('index.json');
   if(manifest.members!==31||manifest.status!=='ok')throw Error('Publication AIGEFS incomplète.');
@@ -28,7 +29,7 @@ document.querySelectorAll('[data-aigefs]').forEach(async (root,index) => {
    $('[data-city-status]').textContent='Chargement…';const dep=await load('departements/'+c[2]+'.json');const commune=dep.communes.find(row=>row[0]===c[0]);if(!commune)throw Error('Commune absente de la publication.');
    if(id!==requestId)return;
    $('[data-head]').replaceChildren();$('[data-body]').replaceChildren();const hr=document.createElement('tr'),shortLabels={precipitation:'Cumul (mm)',rain6:'Pluie 6 h',temperature:'T° à 2 m',vent:'Vent 10 m',nuages:'Nuages',humidity:'Humidité',pressure:'Pression'};const dateHead=document.createElement('th');dateHead.textContent='Validité';hr.append(dateHead);Object.entries(manifest.products).forEach(([key,p])=>{const th=document.createElement('th');th.textContent=shortLabels[key]||p.label;th.title=p.label+' ('+p.unit+')';hr.append(th);});$('[data-head]').append(hr);
-   dep.forecast.forEach(([date,rows])=>{const tr=document.createElement('tr'),td=document.createElement('td');td.textContent=new Date(date).toLocaleString('fr-FR',{timeZone:'Europe/Paris'});tr.append(td);Object.values(manifest.products).forEach(p=>{const cell=document.createElement('td');cell.textContent=number(rows[commune[6]][p.column],p.unit);tr.append(cell);});$('[data-body]').append(tr);});
+   dep.forecast.forEach(([date,rows])=>{const tr=document.createElement('tr'),td=document.createElement('td'),valid=new Date(date),day=document.createElement('strong'),hour=document.createElement('span');td.className='aigefs-forecast-date';day.textContent=valid.toLocaleDateString('fr-FR',{timeZone:'Europe/Paris',day:'2-digit',month:'2-digit',year:'numeric'});hour.textContent=valid.toLocaleTimeString('fr-FR',{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit'});td.append(day);td.append(hour);tr.append(td);Object.entries(manifest.products).forEach(([key,p])=>{const cell=document.createElement('td');cell.textContent=number(rows[commune[6]][p.column],p.unit,key);tr.append(cell);});$('[data-body]').append(tr);});
    $('[data-city-status]').textContent=c[1]+' · maille la plus proche · moyenne des 31 membres';
   }catch(error){if(id===requestId)$('[data-city-status]').textContent=error.message;}};
   const show=()=>{locationId++;const query=$('[data-city]').value.trim(),matches=cities.filter(c=>query===c[0]||query===c[1]+' ('+c[0]+')'||query.toLocaleLowerCase('fr')===c[1].toLocaleLowerCase('fr'));
