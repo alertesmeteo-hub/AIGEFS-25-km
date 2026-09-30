@@ -55,8 +55,8 @@ jobs:
       - name: Créer le ZIP WordPress
         run: |
           cd wordpress
-          zip -qr ../build/aigefs-25-km-v1.0.0.zip aigefs-25-km
+          zip -qr ../build/aigefs-25-km-v1.1.1.zip aigefs-25-km
       - uses: actions/upload-artifact@v4
         with:
           name: aigefs-wordpress
-          path: build/aigefs-25-km-v1.0.0.zip
+          path: build/aigefs-25-km-v1.1.1.zip
